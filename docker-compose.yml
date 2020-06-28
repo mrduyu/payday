@@ -1,0 +1,119 @@
+version: "3.5"
+services:
+  incomeinformationservice:
+    image: income-information-service
+    build:
+      context: ./income-information-service
+      dockerfile: Dockerfile
+    container_name: incomeinformationservice
+    ports:
+      - "8102:8102"
+    networks:
+      - paydaybanknetwork
+    depends_on:
+      - mongo
+
+  kafkaservice:
+    image: kafka-service
+    build:
+      context: ./kafka-service
+      dockerfile: Dockerfile
+    container_name: kafkaservice
+    ports:
+      - "8105:8105"
+    restart: always
+    networks:
+      - paydaybanknetwork
+    depends_on:
+      - zookeeper
+      - kafka
+
+  kycinformationservice:
+    image: kyc-information-service
+    build:
+      context: ./kyc-information-service
+      dockerfile: Dockerfile
+    container_name: kycinformationservice
+    ports:
+      - "8101:8101"
+    networks:
+      - paydaybanknetwork
+    depends_on:
+      - mongo
+
+  loanservice:
+    image: loan-service
+    build:
+      context: ./loan-service
+      dockerfile: Dockerfile
+    container_name: loanservice
+    ports:
+      - "8100:8100"
+    networks:
+      - paydaybanknetwork
+    depends_on:
+      - mongo
+
+  riskanalysisservice:
+    image: risk-analysis-service
+    build:
+      context: ./risk-analysis-service
+      dockerfile: Dockerfile
+    container_name: riskanalysisservice
+    ports:
+      - "8103:8103"
+    networks:
+      - paydaybanknetwork
+    depends_on:
+      - loanservice
+      - kycinformationservice
+      - incomeinformationservice
+      - kafkaservice
+
+  mailservice:
+    image: mail-service
+    build:
+      context: ./mail-service
+      dockerfile: Dockerfile
+    container_name: mailservice
+    ports:
+      - "8104:8104"
+    networks:
+      - paydaybanknetwork
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    container_name: mymongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - paydaybanknetwork
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - paydaybanknetwork
+
+  kafka:
+    image: wurstmeister/kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    networks:
+      - paydaybanknetwork
+    environment:
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: "Topic1:1:1"
+    depends_on:
+      - zookeeper
+
+networks:
+  paydaybanknetwork:
+    name: paydaybanknetwork
+    driver: bridge
